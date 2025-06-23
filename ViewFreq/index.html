@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分子振动可视化</title>
+    
+    <!-- 外部库 -->
+    <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+    
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- 3DMol检查脚本 -->
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            if (typeof $3Dmol === 'undefined') {
+                alert('警告: 3Dmol.js 库加载失败，可视化功能可能无法正常工作。');
+            }
+        });
+    </script>
+</head>
+<body>
+    <!-- 遮罩层 -->
+    <div class="overlay" id="overlay" onclick="closePanels()"></div>
+    
+    <div class="container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <h1>分子振动</h1>
+              <!-- 文件上传区域 -->
+            <div class="upload-section">
+                <div class="upload-area" id="logUpload" onclick="document.getElementById('logFile').click()">
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                        <div class="status-indicator" id="logIndicator"></div>
+                        <span>Gaussian Log文件 (.log/.out)</span>
+                    </div>
+                    <div class="upload-text" id="logText">一键解析坐标和振动数据</div>                </div>
+                <input type="file" id="logFile" accept=".log,.out,.txt" onchange="handleLogUpload()">
+            </div>
+            
+            <!-- 主要操作按钮 -->
+            <button class="btn btn-primary" id="loadBtn" onclick="loadData()" disabled>
+                加载数据
+            </button>
+            
+            <button class="btn btn-secondary" onclick="loadExample()">
+                加载示例
+            </button>
+              <div class="divider"></div>            <!-- 显示控制区域 -->
+            <div class="control-section">
+                <div class="control-label">向量控制</div>
+                
+                <!-- 向量设置按钮 -->
+                <button class="circle-btn disabled" id="vectorSettingsBtn" onclick="openVectorPanel()" style="margin-bottom: 8px;">
+                    ⚙️
+                    <div class="btn-tooltip">向量设置</div>
+                </button>
+                
+                <!-- 显示控制按钮 -->
+                <button class="btn btn-secondary" id="vectorBtn" onclick="toggleVectors()" disabled>
+                    显示向量
+                </button>
+            </div>
+            
+            <div class="divider"></div>
+              <!-- 振动控制区域 -->
+            <div class="control-section">
+                <div class="control-label">振动控制</div>
+                
+                <!-- 振动设置按钮 -->
+                <button class="circle-btn vibration disabled" id="vibrationSettingsBtn" onclick="openVibrationPanel()" style="margin-bottom: 12px;">
+                    🎵
+                    <div class="btn-tooltip">振动设置</div>
+                </button>
+                
+                <!-- 振动播放按钮 -->
+                <button class="btn btn-success" id="playBtn" onclick="toggleVibration()" disabled style="margin-bottom: 12px;">
+                    播放振动
+                </button>
+                
+                <!-- 模式选择区域 -->
+                <div class="mode-selection" id="modeSelectionContainer" style="display: none;">
+                    <div class="control-label" style="margin-bottom: 8px;">振动模式选择</div>
+                    <select id="modeSelector" class="mode-select" onchange="selectMode()" style="margin-bottom: 8px;">
+                        <option value="">-- 选择振动模式 --</option>
+                    </select>
+                    <div class="mode-info" id="modeInfo">                    <div class="frequency-display">频率: <span id="frequencyValue">--</span> cm<sup>-1</sup></div>                </div>
+            </div>
+        </div>
+        </div><!-- 主显示区域 -->
+        <div class="main-viewer">
+            <div id="molecule-viewer"></div>
+              <!-- 悬浮控制面板 -->
+            <div class="floating-controls">
+                <button class="floating-btn" id="atomLabelsBtn" onclick="toggleAtomLabels()" disabled title="显示/隐藏原子标签">
+                    🏷️
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 向量设置面板 -->
+    <div class="slide-panel" id="vectorPanel">
+        <div class="panel-header">
+            <h2 class="panel-title">向量设置</h2>
+            <button class="close-btn" onclick="closePanel('vectorPanel')">✕</button>
+        </div>
+        <div class="panel-content">
+            <div class="control-group">
+                <div class="control-label">向量外观</div>
+                <div class="input-row">
+                    <span class="input-label">长度缩放</span>
+                    <input type="number" class="number-input" id="scaleInput" value="10" step="1" onchange="updateVectors()">
+                </div>
+                <div class="input-row">
+                    <span class="input-label">箭头粗细</span>
+                    <input type="number" class="number-input" id="radiusInput" value="0.05" step="0.01" onchange="updateVectors()">
+                </div>
+                <div class="input-row">
+                    <span class="input-label">头部宽度</span>
+                    <input type="number" class="number-input" id="headWidthInput" value="2.0" step="0.1" onchange="updateVectors()">
+                </div>
+                <div class="input-row">
+                    <span class="input-label">头部长度</span>
+                    <input type="number" class="number-input" id="headLengthInput" value="0.3" step="0.05" onchange="updateVectors()">
+                </div>
+                <div class="input-row">
+                    <span class="input-label">显示阈值</span>
+                    <input type="number" class="number-input" id="thresholdInput" value="0.01" step="0.001" onchange="updateVectors()">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <div class="control-label">颜色</div>
+                <div class="color-row">
+                    <span class="input-label">向量颜色</span>
+                    <input type="color" class="color-input" id="colorPicker" value="#007aff" onchange="updateVectors()">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 振动设置面板 -->
+    <div class="slide-panel" id="vibrationPanel">
+        <div class="panel-header">
+            <h2 class="panel-title">振动设置</h2>
+            <button class="close-btn" onclick="closePanel('vibrationPanel')">✕</button>
+        </div>
+        <div class="panel-content">
+            <div class="control-group">
+                <div class="control-label">振动参数</div>
+                <div class="input-row">
+                    <span class="input-label">振动幅度</span>
+                    <input type="number" class="number-input" id="amplitudeInput" value="2" step="0.1" onchange="updateVibration()">
+                </div>
+                <div class="input-row">
+                    <span class="input-label">动画速度 (ms)</span>
+                    <input type="number" class="number-input" id="speedInput" value="50" step="10" onchange="updateVibration()">
+                </div>
+                <div class="input-row">
+                    <span class="input-label">帧数</span>
+                    <input type="number" class="number-input" id="framesInput" value="20" step="1" onchange="updateVibration()">
+                </div>
+            </div>
+        </div>
+    </div>    <!-- JavaScript文件 -->
+    <script src="modules.js"></script>
+    <script src="gaussian-parser.js"></script>
+    <script src="app.js"></script>
+    <script src="controls.js"></script>
+</body>
+</html>

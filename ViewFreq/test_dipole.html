@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>偶极矩功能测试</title>
+    <script src="gaussian-parser.js"></script>
+</head>
+<body>
+    <h1>偶极矩解析测试</h1>
+    <button onclick="runTest()">运行测试</button>
+    <div id="result"></div>
+
+    <script>
+        function runTest() {
+            const testLogContent = `
+Dipole moment (field-independent basis, Debye):
+   X=              0.0013    Y=             -0.4893    Z=             -0.0083  Tot=              0.4894
+Quadrupole moment (field-independent basis, Debye-Ang):
+  XX=           -437.8035   YY=           -415.6470   ZZ=           -454.0829
+  XY=              0.0706   XZ=              0.0712   YZ=              7.6478
+`;
+
+            const parser = new GaussianLogParser();
+            const dipole = parser.extractDipoleMoment(testLogContent);
+            const quadrupole = parser.extractQuadrupoleMoment(testLogContent);
+
+            let result = '<h2>测试结果</h2>';
+            
+            if (dipole) {
+                result += `<h3>偶极矩解析成功：</h3>
+                    <p>X: ${dipole.x}</p>
+                    <p>Y: ${dipole.y}</p>
+                    <p>Z: ${dipole.z}</p>
+                    <p>Total: ${dipole.total}</p>`;
+            } else {
+                result += '<p>偶极矩解析失败</p>';
+            }
+
+            if (quadrupole) {
+                result += `<h3>四极矩解析成功：</h3>
+                    <p>XX: ${quadrupole.xx}</p>
+                    <p>YY: ${quadrupole.yy}</p>
+                    <p>ZZ: ${quadrupole.zz}</p>
+                    <p>XY: ${quadrupole.xy}</p>
+                    <p>XZ: ${quadrupole.xz}</p>
+                    <p>YZ: ${quadrupole.yz}</p>`;
+            } else {
+                result += '<p>四极矩解析失败</p>';
+            }
+
+            document.getElementById('result').innerHTML = result;
+        }
+    </script>
+</body>
+</html>
